@@ -129,7 +129,7 @@ export const forgotPassword = async (email) => {
       return { success: false, message: response.data.message || 'Erreur lors de l\'envoi de l\'e-mail de réinitialisation.' };
     }
   } catch (error) {
-    console.error('Erreur lors de la demande de réinitialisation de mot de passe:', error.message);
+    console.error('Erreur lors de la demande de réinitialisation de mot de passe:', error);
     return { success: false, message: 'Impossible de traiter votre demande.' };
   }
 };

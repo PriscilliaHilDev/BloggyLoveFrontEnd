@@ -6,12 +6,23 @@ import LoginScreen from '../screens/public/LoginScreen'
 import RegisterScreen from '../screens/public/RegisterScreen'
 import WelcomeScreen from '../screens/private/WelcomScreen'
 import ForgotPasswordScreen from '../screens/public/ForgetPasswordScreen';
+import ResetPasswordScreen from '../screens/public/ResetPasswordScreen';
+
 
 const Stack = createStackNavigator();
 
+const linking = {
+  prefixes: ['mychat://', 'http://192.168.1.20', 'https://192.168.1.20'],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password/:token', // Capturer le token de l'URL
+    },
+  },
+};
+
 const PublicNavigation = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
@@ -22,6 +33,7 @@ const PublicNavigation = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
 
       </Stack.Navigator>
