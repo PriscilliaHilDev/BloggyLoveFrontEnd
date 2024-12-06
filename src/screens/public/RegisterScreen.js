@@ -14,42 +14,65 @@ import * as Yup from 'yup';
 import { registerUser } from '../../services/authService';
 
 const RegisterScreen = ({ navigation }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  // Déclaration d'état pour le chargement (lorsque l'enregistrement est en cours)
+const [isLoading, setIsLoading] = useState(false);
 
-  // Validation du formulaire avec Yup
-  const validationSchema = Yup.object().shape({
-    name: Yup.string().required('Le nom est requis'),
-    email: Yup.string().email('Email invalide').required('Email est requis'),
-    password: Yup.string()
-      .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
-      .required('Mot de passe est requis'),
-    confirmPassword: Yup.string()
-      .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
-      .required('La confirmation du mot de passe est requise'),
-  });
+// Schéma de validation du formulaire avec Yup pour assurer la validité des champs
+const validationSchema = Yup.object().shape({
+  // Validation du champ 'name' pour s'assurer qu'il est requis
+  name: Yup.string().required('Le nom est requis'),
+  
+  // Validation du champ 'email' pour vérifier qu'il a un format valide et qu'il est requis
+  email: Yup.string().email('Email invalide').required('Email est requis'),
+  
+  // Validation du mot de passe : il doit contenir au moins 6 caractères et être requis
+  password: Yup.string()
+    .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
+    .required('Mot de passe est requis'),
+  
+  // Validation de la confirmation du mot de passe : il doit correspondre au mot de passe
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
+    .required('La confirmation du mot de passe est requise'),
+});
 
-  const handleRegister = async (values, resetForm) => {
-    const { name, email, password } = values;
-    setIsLoading(true);
+const handleRegister = async (values, resetForm) => {
+  // On récupère les valeurs du formulaire : nom, email et mot de passe
+  const { name, email, password } = values;
+  
+  // On met l'état de chargement à true pour afficher un indicateur de chargement pendant l'enregistrement
+  setIsLoading(true);
 
-    try {
-      const result = await registerUser({ name, email, password });
+  try {
+    // On appelle la fonction d'enregistrement avec les données du formulaire
+    const result = await registerUser({ name, email, password });
 
-      if (result.success) {
-        // Assure-toi que la navigation ne se fait pas pendant le rendu
-        setTimeout(() => {
-          navigation.navigate('Login'); // Naviguer vers la page de connexion
-        }, 500); // Délai pour éviter l'erreur
-        Alert.alert('Enregistrement réussit', 'Compte crée !');
-      } else {
-        Alert.alert('Erreur', result.message);
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
-    }finally {
-      setIsLoading(false);
+    // Si l'enregistrement est réussi
+    if (result.success) {
+      // On réinitialise le formulaire pour le vider et enlever les erreurs
+      resetForm();  // Tous les champs et erreurs sont réinitialisés
+
+      // Petite pause avant la navigation, pour éviter les erreurs de rendu de la navigation
+      setTimeout(() => {
+        // On navigue vers la page de connexion après un enregistrement réussi
+        navigation.navigate('Login');
+      }, 500); // Délai pour éviter le bug de navigation immédiate
+
+      // On affiche une alerte pour informer que l'enregistrement a réussi
+      Alert.alert('Enregistrement réussit', 'Compte créé !');
+    } else {
+      // Si l'API renvoie une erreur, on l'affiche
+      Alert.alert('Erreur', result.message);
     }
-  };
+  } catch (error) {
+    // Si une erreur inattendue survient (ex. problème réseau), on affiche un message générique
+    Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
+  } finally {
+    // Quel que soit le résultat, on désactive le chargement à la fin
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <KeyboardAvoidingView
@@ -62,7 +85,7 @@ const RegisterScreen = ({ navigation }) => {
         <Formik
           initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
           validationSchema={validationSchema}
-          onSubmit={(values, { resetForm }) => handleRegister(values, resetForm)}
+          onSubmit={(values, { resetForm }) => handleRegister(values, resetForm)} // appel de handleregister
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <>

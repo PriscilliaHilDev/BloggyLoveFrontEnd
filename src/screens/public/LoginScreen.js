@@ -11,24 +11,29 @@ const LoginScreen = ({ navigation }) => {
     password: Yup.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères').required('Mot de passe est requis'),
   });
 
-  // Fonction pour gérer la connexion
-  const handleLogin = async (values) => {
-    try{
-    const result = await loginUser(values); // Appel du service loginUser
-
-    if (result.success) {
-      // Assure-toi que la navigation ne se fait pas pendant le rendu
-      setTimeout(() => {
-        navigation.navigate('Login'); // Naviguer vers la page de connexion
-      }, 500); // Délai pour éviter l'erreur
-      Alert.alert('Connexion réussite', 'vous etes connecté!');
-    } else {
-      Alert.alert('Erreur', result.message);
+  const handleLogin = async (values, resetForm) => {
+    try {
+      const result = await loginUser(values);
+  
+      if (result.success) {
+        // Réinitialisation des champs du formulaire si la connexion est réussie
+        resetForm();
+  
+        // Navigation vers la page d'accueil ou la page souhaitée
+        setTimeout(() => {
+          navigation.navigate('Home');
+        }, 500);
+        
+        // Affichage de l'alerte de succès
+        Alert.alert('Connexion réussie', 'Vous êtes connecté !');
+      } else {
+        Alert.alert('Erreur', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
     }
-  } catch (error) {
-    Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
-  }
   };
+  
 
   return (
     <KeyboardAvoidingView
@@ -37,11 +42,13 @@ const LoginScreen = ({ navigation }) => {
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Connexion</Text>
-
+  
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={validationSchema}
-          onSubmit={(values) => handleLogin(values)} // Appeler la fonction handleLogin lors de la soumission du formulaire
+          onSubmit={(values, { resetForm }) => {
+            handleLogin(values, resetForm); // Appel de handleLogin et passage de resetForm
+          }}
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <>
@@ -56,7 +63,7 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
-
+  
               <View style={styles.inputContainer}>
                 <TextInput
                   style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
@@ -68,18 +75,19 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
+  
               <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={styles.linkForgotPassword}>Mot de passe oublié ?</Text>
+                <Text style={styles.linkForgotPassword}>Mot de passe oublié ?</Text>
               </TouchableOpacity>
-
+  
               <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
                 <Text style={styles.submitButtonText}>Se connecter</Text>
               </TouchableOpacity>
-              
+  
             </>
           )}
         </Formik>
-
+  
         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
           <Text style={styles.linkText}>Vous n'avez pas encore de compte ?</Text>
           <Text style={styles.linkText}> Inscrivez-vous</Text>
@@ -87,6 +95,7 @@ const LoginScreen = ({ navigation }) => {
       </View>
     </KeyboardAvoidingView>
   );
+  
 };
 
 const styles = StyleSheet.create({

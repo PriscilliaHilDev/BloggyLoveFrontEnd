@@ -10,7 +10,6 @@ const HomeScreen = ({ navigation }) => {
   // Fonction pour gérer la connexion Google
   const handleGoogleLogin = async () => {
     const result = await googleLogin();
-    console.log(result)
     if (result.success) {
       Alert.alert('Connexion réussie', `Bienvenue !`);
       // navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
@@ -20,7 +19,6 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  console.log('yoyo', API_BASE_URL)
 
   return (
     <ImageBackground 

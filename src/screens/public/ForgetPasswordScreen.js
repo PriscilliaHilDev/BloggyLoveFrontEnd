@@ -1,72 +1,91 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import { forgotPassword } from '../../services/authService'; // Importer la fonction forgotPassword
 
-const ResetPasswordScreen = ({ route, navigation }) => {
-  const { token } = route.params; // Récupération du token depuis les paramètres
+const ForgotPasswordScreen = ({ navigation }) => {
+    // Déclaration d'un état local pour gérer le chargement (spinner ou désactivation des boutons)
+const [loading, setLoading] = React.useState(false);
 
-  const validationSchema = Yup.object().shape({
-    password: Yup.string().required('Le mot de passe est requis').min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-    confirmPassword: Yup.string()
-      .oneOf([Yup.ref('password'), null], 'Les mots de passe doivent correspondre')
-      .required('Veuillez confirmer le mot de passe'),
-  });
+// Définition du schéma de validation avec Yup
+// Cela permet de valider que l'email est bien formaté et qu'il est requis
+const validationSchema = Yup.object().shape({
+  email: Yup.string().email('Email invalide').required('Email est requis'), // Validation de l'email
+});
 
-  const handleResetPassword = async (values) => {
-    try {
-      // Ici, vous pouvez appeler une API pour réinitialiser le mot de passe
-      const result = await resetPassword(token, values.password);
-      if (result.success) {
-        Alert.alert('Succès', 'Votre mot de passe a été réinitialisé.');
-        navigation.navigate('Login');
-      } else {
-        Alert.alert('Erreur', result.message);
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue.');
+// Fonction qui gère la logique de réinitialisation du mot de passe
+// Elle est appelée lors de la soumission du formulaire
+const handleForgotPassword = async (values) => {
+  setLoading(true); // Active l'état de chargement avant l'envoi de la demande
+
+  try {
+    // Appel à la fonction forgotPassword pour envoyer la demande avec l'email
+    // Seul l'email est passé, et non un objet supplémentaire
+    const result = await forgotPassword(values.email);
+
+    // Désactive l'état de chargement une fois la réponse reçue
+    setLoading(false);
+
+    // Si la réponse est positive (succès), affiche un message de confirmation
+    if (result.success) {
+      Alert.alert(
+        'Réinitialisation envoyée', // Titre de l'alerte
+        'Un e-mail de réinitialisation a été envoyé à votre adresse.', // Message d'alerte
+        [
+          {
+            text: 'OK', // Bouton OK
+            onPress: () => navigation.navigate('Login'), // Naviguer vers l'écran de connexion
+          },
+        ]
+      );
+    } else {
+      // Si une erreur survient, affiche l'erreur retournée par l'API
+      Alert.alert('Erreur', result.message);
     }
-  };
-
-  return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Réinitialiser le mot de passe</Text>
-        <Formik
-          initialValues={{ password: '', confirmPassword: '' }}
-          validationSchema={validationSchema}
-          onSubmit={(values) => handleResetPassword(values)}
-        >
-          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
-            <>
-              <TextInput
-                style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
-                placeholder="Nouveau mot de passe"
-                secureTextEntry
-                onChangeText={handleChange('password')}
-                onBlur={handleBlur('password')}
-                value={values.password}
-              />
-              {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-              <TextInput
-                style={[styles.input, touched.confirmPassword && errors.confirmPassword ? styles.inputError : null]}
-                placeholder="Confirmer le mot de passe"
-                secureTextEntry
-                onChangeText={handleChange('confirmPassword')}
-                onBlur={handleBlur('confirmPassword')}
-                value={values.confirmPassword}
-              />
-              {touched.confirmPassword && errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>Réinitialiser le mot de passe</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </Formik>
-      </View>
-    </KeyboardAvoidingView>
-  );
+  } catch (error) {
+    // En cas d'erreur lors de l'appel à l'API (par exemple réseau, serveur, etc.)
+    setLoading(false); // Désactive l'état de chargement
+    Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.'); // Affiche un message générique d'erreur
+  }
 };
+
+  
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Mot de passe oublié</Text>
+  
+          <Formik
+            initialValues={{ email: '' }}
+            validationSchema={validationSchema}
+            onSubmit={(values) => handleForgotPassword(values)}
+          >
+            {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+              <>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.input, touched.email && errors.email ? styles.inputError : null]}
+                    placeholder="Email"
+                    keyboardType="email-address"
+                    onChangeText={handleChange('email')}
+                    onBlur={handleBlur('email')}
+                    value={values.email}
+                  />
+                  {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                </View>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+                  <Text style={styles.submitButtonText}>
+                    {loading ? 'Envoi en cours...' : 'Réinitialiser mot de passe'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </Formik>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  };
 
 const styles = StyleSheet.create({
   container: {
@@ -84,6 +103,10 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginBottom: 30,
+  },
+  inputContainer: {
+    marginBottom: 15,
+    marginHorizontal: 15,
   },
   input: {
     height: 50,
@@ -115,5 +138,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-export default ResetPasswordScreen;
+export default ForgotPasswordScreen;

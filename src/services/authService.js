@@ -1,109 +1,115 @@
 import { authorize } from 'react-native-app-auth';
 import { saveUserData } from '../utils/userStorage';
 import api from '../secureApiRequest';
-import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement
+import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement pour l'OAuth Google
 
 
-// Configuration OAuth Google
-// Configuration OAuth Google avec les variables d'environnement
+// Configuration OAuth Google avec les paramètres provenant des variables d'environnement
 const config = {
   issuer: "https://accounts.google.com",
   clientId: GOOGLE_CLIENT_ID,
   redirectUrl: GOOGLE_REDIRECT_URL,
-  scopes: ['openid', 'profile', 'email'],
-  usePKCE: true, // Active PKCE pour une sécurité renforcée
+  scopes: ['openid', 'profile', 'email'], // Définir les autorisations requises pour l'authentification
+  usePKCE: true, // Utilisation de PKCE pour renforcer la sécurité lors de l'authentification
 };
 
 
-// Fonction pour supprimer les données utilisateur lors de la déconnexion
+// Fonction pour gérer la déconnexion et supprimer les données utilisateur
 export const logoutUser = async () => {
   try {
-    // Appeler saveUserData pour effacer les données
-    await saveUserData(); // Les paramètres sont nulls, donc ça va supprimer les données
+    // Supprimer les données utilisateur en les définissant sur null
+    await saveUserData(); // En appelant cette fonction avec des paramètres nuls, on efface les données
   } catch (error) {
+    // En cas d'erreur pendant la déconnexion
     console.error('Erreur lors de la déconnexion de l’utilisateur:', error);
   }
 };
 
-// Fonction pour gérer la connexion via Google
+// Fonction pour gérer la connexion via Google OAuth
 export const googleLogin = async () => {
   try {
-    // Authentification OAuth via Google
-    const authState = await authorize(config); // `authorize` retourne l'état d'authentification avec `idToken` et `accessToken`
-    const { idToken, accessToken } = authState;
+    // Authentification avec Google via OAuth
+    const authState = await authorize(config); // Appel à la méthode `authorize` qui renvoie les tokens d'authentification
+    const { idToken, accessToken } = authState; // Extraction des tokens nécessaires
 
-    // Appel à l'API backend pour vérifier et gérer les jetons
+    // Envoi des tokens à l'API backend pour validation et traitement
     const response = await api.post('/google-login', {
       idToken,
-      accessToken, // Ce token pourrait être optionnel selon l'implémentation de l'API
+      accessToken, // Le accessToken pourrait être optionnel selon l'API
     });
 
+    // Vérification de la réponse du backend
     if (response.status === 200) {
-      const { tokens, user } = response.data;
+      const { tokens, user } = response.data; // Extraction des informations utilisateur et des tokens
       const { refreshToken, accessToken: newAccessToken } = tokens;
 
-      // Sauvegarder les données utilisateur (tokens et informations utilisateur) de manière sécurisée
+      // Sauvegarder les données utilisateur de manière sécurisée
       await saveUserData(user, 'google', newAccessToken, refreshToken);
 
       console.log('Connexion réussie via Google');
-      return { success: true, message: 'Vous êtes connecté !' };
+      return { success: true, message: 'Vous êtes connecté !' }; // Retourner une réponse indiquant une connexion réussie
     } else {
+      // Si la réponse est incorrecte
       return { success: false, message: response.data.message || 'Erreur lors de la connexion.' };
     }
   } catch (error) {
+    // Gestion des erreurs spécifiques, comme si l'utilisateur annule la demande d'authentification
     if (error.message.includes('User cancelled flow')) {
-      return { success: false, silent: true }; // Cas où l'utilisateur annule la connexion
+      return { success: false, silent: true }; // Réponse silencieuse si l'utilisateur annule le flux
     }
     console.error('Erreur lors de la connexion avec Google:', error);
-    return { success: false, message: 'Impossible de se connecter avec Google.' };
+    return { success: false, message: 'Impossible de se connecter avec Google.' }; // Retourner un message d'erreur générique
   }
 };
 
-// Fonction pour gérer la connexion par email et mot de passe
+// Fonction pour gérer la connexion avec un email et mot de passe
 export const loginUser = async (credentials) => {
   try {
+    // Envoi des informations d'authentification à l'API backend
     const response = await api.post("/login", {
       email: credentials.email,
       password: credentials.password,
     });
- // Vérifie si l'utilisateur a bien été créé avec un statut HTTP 201
- if (response.status === 200) {
-  const { tokens, user } = response.data;
-  const { accessToken, refreshToken } = tokens;
 
-  // Sauvegarde des données utilisateur
-  await saveUserData(user, 'form', accessToken, refreshToken);
-
-  console.log('Utilisateur enregistré avec succès');
-  return { success: true, data: response.data };
-} else {
-  console.error('Statut HTTP inattendu:', response.status);
-  return { success: false, message: 'Erreur lors de l’inscription' };
-}
-  } catch (error) {
-    console.error('Erreur lors de la connexion :', error);
-    return {
-      success: false,
-      message: error.response?.data?.message || 'Une erreur est survenue',
-    };
-  }
-};
-
-export const registerUser = async (userData) => {
-  try {
-    // Envoie de la requête POST au backend pour enregistrer l'utilisateur
-    const response = await api.post("/register", userData);
-
-    // Vérifie si l'utilisateur a bien été créé avec un statut HTTP 201
+    // Vérification de la réponse pour s'assurer que l'utilisateur est bien connecté
     if (response.status === 200) {
-      const { tokens, user } = response.data;
+      const { tokens, user } = response.data; // Extraction des tokens et des informations utilisateur
       const { accessToken, refreshToken } = tokens;
 
       // Sauvegarde des données utilisateur
       await saveUserData(user, 'form', accessToken, refreshToken);
 
+      console.log('Utilisateur connecté avec succès');
+      return { success: true, data: response.data }; // Retourner les données de l'utilisateur
+    } else {
+      console.error('Statut HTTP inattendu:', response.status);
+      return { success: false, message: 'Erreur lors de la connexion' };
+    }
+  } catch (error) {
+    console.error('Erreur lors de la connexion :', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Une erreur est survenue', // Gestion des erreurs avec message personnalisé
+    };
+  }
+};
+
+// Fonction pour enregistrer un utilisateur
+export const registerUser = async (userData) => {
+  try {
+    // Envoi des informations d'inscription à l'API backend
+    const response = await api.post("/register", userData);
+
+    // Vérification du statut HTTP pour confirmer que l'utilisateur a bien été créé
+    if (response.status === 200) {
+      const { tokens, user } = response.data; // Récupération des tokens et de l'utilisateur
+      const { accessToken, refreshToken } = tokens;
+
+      // Sauvegarder les données utilisateur
+      await saveUserData(user, 'form', accessToken, refreshToken);
+
       console.log('Utilisateur enregistré avec succès');
-      return { success: true, data: response.data };
+      return { success: true, data: response.data }; // Retourner les données d'inscription
     } else {
       console.error('Statut HTTP inattendu:', response.status);
       return { success: false, message: 'Erreur lors de l’inscription' };
@@ -117,19 +123,45 @@ export const registerUser = async (userData) => {
   }
 };
 
-// Fonction pour gérer la demande de réinitialisation de mot de passe
+// Fonction pour demander la réinitialisation du mot de passe
 export const forgotPassword = async (email) => {
   try {
+    // Envoi de la demande de réinitialisation à l'API backend
     const response = await api.post("/forgot-password", { email });
 
+    // Vérification de la réponse pour confirmer que l'e-mail a été envoyé
     if (response.status === 200) {
       console.log('E-mail de réinitialisation envoyé');
-      return { success: true, message: 'Un e-mail de réinitialisation a été envoyé.' };
+      return { success: true, message: 'Un e-mail de réinitialisation a été envoyé.' }; // Confirmation de l'envoi de l'e-mail
     } else {
       return { success: false, message: response.data.message || 'Erreur lors de l\'envoi de l\'e-mail de réinitialisation.' };
     }
   } catch (error) {
     console.error('Erreur lors de la demande de réinitialisation de mot de passe:', error);
     return { success: false, message: 'Impossible de traiter votre demande.' };
+  }
+};
+
+// Fonction pour gérer la réinitialisation du mot de passe
+export const resetPassword = async (token, newPassword) => {
+  console.log('token reçu', token); // Affichage du token pour débogage
+  try {
+    // Envoi de la requête POST avec le token et le mot de passe
+    const response = await api.post(`/reset-password/${token}`, { password: newPassword });
+    console.log('réponse', response); // Affichage de la réponse pour débogage
+
+    if (response.status === 200) {
+      console.log('Mot de passe réinitialisé avec succès');
+      return { success: true, message: 'Votre mot de passe a été réinitialisé avec succès.' }; // Réponse de succès
+    } else {
+      console.error('Statut HTTP inattendu:', response.status);
+      return { success: false, message: response.data.message || 'Erreur lors de la réinitialisation du mot de passe.' };
+    }
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation du mot de passe:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Impossible de réinitialiser votre mot de passe.',
+    };
   }
 };
