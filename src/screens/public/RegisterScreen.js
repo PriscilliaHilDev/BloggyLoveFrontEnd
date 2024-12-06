@@ -14,65 +14,66 @@ import * as Yup from 'yup';
 import { registerUser } from '../../services/authService';
 
 const RegisterScreen = ({ navigation }) => {
-  // Déclaration d'état pour le chargement (lorsque l'enregistrement est en cours)
-const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    minLength: false,
+    hasLowercase: false,
+    hasUppercase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+  });
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
 
-// Schéma de validation du formulaire avec Yup pour assurer la validité des champs
-const validationSchema = Yup.object().shape({
-  // Validation du champ 'name' pour s'assurer qu'il est requis
-  name: Yup.string().required('Le nom est requis'),
-  
-  // Validation du champ 'email' pour vérifier qu'il a un format valide et qu'il est requis
-  email: Yup.string().email('Email invalide').required('Email est requis'),
-  
-  // Validation du mot de passe : il doit contenir au moins 6 caractères et être requis
-  password: Yup.string()
-    .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
-    .required('Mot de passe est requis'),
-  
-  // Validation de la confirmation du mot de passe : il doit correspondre au mot de passe
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
-    .required('La confirmation du mot de passe est requise'),
-});
+  const validationSchema = Yup.object().shape({
+    name: Yup.string().required('Le nom est requis'),
+    email: Yup.string().email('Email invalide').required('Email est requis'),
+    password: Yup.string()
+      .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
+      .required('Mot de passe est requis')
+      .matches(/[a-z]/, 'Le mot de passe doit contenir au moins une lettre minuscule')
+      .matches(/[A-Z]/, 'Le mot de passe doit contenir au moins une lettre majuscule')
+      .matches(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+      .matches(/[@$!%*?&]/, 'Le mot de passe doit contenir au moins un caractère spécial'),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
+      .required('La confirmation du mot de passe est requise'),
+  });
 
-const handleRegister = async (values, resetForm) => {
-  // On récupère les valeurs du formulaire : nom, email et mot de passe
-  const { name, email, password } = values;
-  
-  // On met l'état de chargement à true pour afficher un indicateur de chargement pendant l'enregistrement
-  setIsLoading(true);
+  const handlePasswordChange = (password) => {
+    const criteria = {
+      minLength: password.length >= 6,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[@$!%*?&]/.test(password),
+    };
 
-  try {
-    // On appelle la fonction d'enregistrement avec les données du formulaire
-    const result = await registerUser({ name, email, password });
+    setPasswordCriteria(criteria);
+    setIsPasswordValid(Object.values(criteria).every((value) => value === true));
+  };
 
-    // Si l'enregistrement est réussi
-    if (result.success) {
-      // On réinitialise le formulaire pour le vider et enlever les erreurs
-      resetForm();  // Tous les champs et erreurs sont réinitialisés
+  const handleRegister = async (values, resetForm) => {
+    const { name, email, password } = values;
+    setIsLoading(true);
 
-      // Petite pause avant la navigation, pour éviter les erreurs de rendu de la navigation
-      setTimeout(() => {
-        // On navigue vers la page de connexion après un enregistrement réussi
-        navigation.navigate('Login');
-      }, 500); // Délai pour éviter le bug de navigation immédiate
+    try {
+      const result = await registerUser({ name, email, password });
 
-      // On affiche une alerte pour informer que l'enregistrement a réussi
-      Alert.alert('Enregistrement réussit', 'Compte créé !');
-    } else {
-      // Si l'API renvoie une erreur, on l'affiche
-      Alert.alert('Erreur', result.message);
+      if (result.success) {
+        resetForm();
+        setTimeout(() => {
+          navigation.navigate('Login');
+        }, 500);
+        Alert.alert('Enregistrement réussit', 'Compte créé !');
+      } else {
+        Alert.alert('Erreur', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    // Si une erreur inattendue survient (ex. problème réseau), on affiche un message générique
-    Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
-  } finally {
-    // Quel que soit le résultat, on désactive le chargement à la fin
-    setIsLoading(false);
-  }
-};
-
+  };
 
   return (
     <KeyboardAvoidingView
@@ -85,13 +86,17 @@ const handleRegister = async (values, resetForm) => {
         <Formik
           initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
           validationSchema={validationSchema}
-          onSubmit={(values, { resetForm }) => handleRegister(values, resetForm)} // appel de handleregister
+          onSubmit={(values, { resetForm }) => handleRegister(values, resetForm)}
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <>
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[styles.input, touched.name && errors.name ? styles.inputError : null]}
+                  style={[
+                    styles.input,
+                    touched.name && errors.name ? styles.inputError : null,
+                    values.name && !errors.name ? styles.inputValid : null,
+                  ]}
                   placeholder="Nom"
                   onChangeText={handleChange('name')}
                   onBlur={handleBlur('name')}
@@ -102,7 +107,11 @@ const handleRegister = async (values, resetForm) => {
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[styles.input, touched.email && errors.email ? styles.inputError : null]}
+                  style={[
+                    styles.input,
+                    touched.email && errors.email ? styles.inputError : null,
+                    values.email && !errors.email ? styles.inputValid : null,
+                  ]}
                   placeholder="Email"
                   keyboardType="email-address"
                   onChangeText={handleChange('email')}
@@ -114,16 +123,43 @@ const handleRegister = async (values, resetForm) => {
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
+                  style={[
+                    styles.input,
+                    touched.password && errors.password ? styles.inputError : null,
+                    values.password && !errors.password && isPasswordValid
+                      ? styles.inputValid
+                      : null,
+                  ]}
                   placeholder="Mot de passe"
                   secureTextEntry
-                  onChangeText={handleChange('password')}
+                  onChangeText={(text) => {
+                    handleChange('password')(text);
+                    handlePasswordChange(text);
+                  }}
                   onBlur={handleBlur('password')}
                   value={values.password}
                 />
-                {touched.password && errors.password && (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                )}
+              
+                 {/* Affichage des critères sous forme de badges */}
+                 {!isPasswordValid && (
+                <View style={styles.passwordCriteriaContainer}>
+                  <View style={[styles.badge, passwordCriteria.minLength ? styles.validBadge : styles.invalidBadge]}>
+                    <Text style={styles.badgeText}>6+ caractères</Text>
+                  </View>
+                  <View style={[styles.badge, passwordCriteria.hasLowercase ? styles.validBadge : styles.invalidBadge]}>
+                    <Text style={styles.badgeText}>Minuscule</Text>
+                  </View>
+                  <View style={[styles.badge, passwordCriteria.hasUppercase ? styles.validBadge : styles.invalidBadge]}>
+                    <Text style={styles.badgeText}>Majuscule</Text>
+                  </View>
+                  <View style={[styles.badge, passwordCriteria.hasNumber ? styles.validBadge : styles.invalidBadge]}>
+                    <Text style={styles.badgeText}>Chiffre</Text>
+                  </View>
+                  <View style={[styles.badge, passwordCriteria.hasSpecialChar ? styles.validBadge : styles.invalidBadge]}>
+                    <Text style={styles.badgeText}>Spécial</Text>
+                  </View>
+                </View>
+              )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -131,6 +167,9 @@ const handleRegister = async (values, resetForm) => {
                   style={[
                     styles.input,
                     touched.confirmPassword && errors.confirmPassword ? styles.inputError : null,
+                    values.confirmPassword && !errors.confirmPassword
+                      ? styles.inputValid
+                      : null,
                   ]}
                   placeholder="Confirmer le mot de passe"
                   secureTextEntry
@@ -143,10 +182,12 @@ const handleRegister = async (values, resetForm) => {
                 )}
               </View>
 
+            
+
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || !isPasswordValid}
               >
                 {isLoading ? (
                   <Text style={styles.submitButtonText}>Chargement...</Text>
@@ -195,6 +236,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 16,
   },
+  inputValid: {
+    borderColor: 'green',
+  },
   inputError: {
     borderColor: '#f44336',
   },
@@ -220,6 +264,28 @@ const styles = StyleSheet.create({
     color: '#007BFF',
     textAlign: 'center',
     fontSize: 14,
+  },
+  passwordCriteriaContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    // justifyContent: 'center',
+  },
+  badge: {
+    margin: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  validBadge: {
+    backgroundColor: 'green',
+  },
+  invalidBadge: {
+    backgroundColor: 'red',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
   },
 });
 
