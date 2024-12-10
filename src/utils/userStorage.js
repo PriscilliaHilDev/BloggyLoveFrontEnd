@@ -1,6 +1,17 @@
 import EncryptedStorage from 'react-native-encrypted-storage'; // Import de EncryptedStorage pour un stockage sécurisé
 
-
+// Fonction pour effacer les données utilisateur
+export const clearUserData = async () => {
+  try {
+    await EncryptedStorage.removeItem('user');
+    await EncryptedStorage.removeItem('auth_source');
+    await EncryptedStorage.removeItem('accessToken');
+    await EncryptedStorage.removeItem('refreshToken');
+    console.log('Données utilisateur supprimées avec succès');
+  } catch (error) {
+    console.error('Erreur lors de l\'effacement des données utilisateur', error);
+  }
+};
 
 // Fonction pour sauvegarder les données utilisateur de manière sécurisée
 export const saveUserData = async (user, authSource, accessToken, refreshToken) => {
@@ -10,44 +21,49 @@ export const saveUserData = async (user, authSource, accessToken, refreshToken) 
       throw new Error('Données utilisateur manquantes');
     }
 
-    // Convertir l'objet 'user' en JSON pour le sauvegarder
-    await EncryptedStorage.setItem('user', JSON.stringify(user)); // Conversion en JSON
+    // Si 'user' est déjà une chaîne JSON, ne pas essayer de le convertir
+    const userData = typeof user === 'string' ? user : JSON.stringify(user);
+    console.log('tototot', userData)
 
-    // Sauvegarde des autres données sous forme de chaîne
+    // Sauvegarder les données
+    await EncryptedStorage.setItem('user', userData);
     await EncryptedStorage.setItem('auth_source', authSource);
     await EncryptedStorage.setItem('accessToken', accessToken);
     await EncryptedStorage.setItem('refreshToken', refreshToken);
 
     console.log('Données utilisateur sauvegardées avec succès');
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde des données utilisateurs:', error);
+    console.error('Erreur lors de la sauvegarde des données utilisateur:', error);
   }
 };
 
-
-// Fonction pour récupérer les données utilisateur (nom, source, tokens)
+// Fonction pour récupérer les données utilisateur
 export const getUserData = async () => {
   try {
+    // Récupération des données stockées
     const user = await EncryptedStorage.getItem('user');
     const authSource = await EncryptedStorage.getItem('auth_source');
     const accessToken = await EncryptedStorage.getItem('accessToken');
     const refreshToken = await EncryptedStorage.getItem('refreshToken');
 
-    // Vérifier si les données sont présentes
+    // Vérification si toutes les données nécessaires sont présentes
     if (!user || !authSource || !accessToken || !refreshToken) {
       console.error('Certaines données sont manquantes');
       return null;
     }
 
-    // Retourner les données utilisateur sous forme d'objet
+    // Parsing du JSON pour l'utilisateur
+    const parsedUser = JSON.parse(user);
+
+    // Retourner les données sous forme d'objet
     return {
-      user,
+      user: parsedUser,
       authSource,
       accessToken,
       refreshToken,
     };
   } catch (error) {
-    console.error('Erreur lors de la récupération des données utilisateurs:', error);
+    console.error('Erreur lors de la récupération des données utilisateur:', error);
     return null;
   }
 };

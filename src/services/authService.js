@@ -1,5 +1,5 @@
 import { authorize } from 'react-native-app-auth';
-import { saveUserData } from '../utils/userStorage';
+import { saveUserData, clearUserData } from '../utils/userStorage';
 import api from '../secureApiRequest';
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement pour l'OAuth Google
 
@@ -13,17 +13,35 @@ const config = {
   usePKCE: true, // Utilisation de PKCE pour renforcer la sécurité lors de l'authentification
 };
 
-
 // Fonction pour gérer la déconnexion et supprimer les données utilisateur
-export const logoutUser = async () => {
+export const logoutUser = async (userId) => {
   try {
-    // Supprimer les données utilisateur en les définissant sur null
-    await saveUserData(); // En appelant cette fonction avec des paramètres nuls, on efface les données
+    // Appel de l'API de déconnexion du back-end
+    const response = await api.post('/logout', { userId });
+
+    // Vérifier la réponse du serveur
+    if (response.status === 200) {
+      // Effacer les données utilisateur localement
+      await clearUserData();
+
+      return { success: true, message: 'Vous êtes déconnecté !' }; // Réponse de succès
+    } else {
+      return { success: false, message: response.data.message || 'Erreur lors de la déconnexion.' };
+    }
   } catch (error) {
-    // En cas d'erreur pendant la déconnexion
-    console.error('Erreur lors de la déconnexion de l’utilisateur:', error);
+    if (error.response) {
+      console.error('Erreur de l\'API:', error.response.data);
+      return { success: false, message: error.response.data.message || 'Erreur lors de la déconnexion.' };
+    } else if (error.request) {
+      console.error('Aucune réponse du serveur:', error.request);
+      return { success: false, message: 'Impossible de se connecter au serveur.' };
+    } else {
+      console.error('Erreur inconnue:', error.message);
+      return { success: false, message: 'Une erreur inconnue est survenue.' };
+    }
   }
 };
+
 
 // Fonction pour gérer la connexion via Google OAuth
 export const googleLogin = async () => {
@@ -74,6 +92,7 @@ export const loginUser = async (credentials) => {
     // Vérification de la réponse pour s'assurer que l'utilisateur est bien connecté
     if (response.status === 200) {
       const { tokens, user } = response.data; // Extraction des tokens et des informations utilisateur
+      console.log(user , 'userr')
       const { accessToken, refreshToken } = tokens;
 
       // Sauvegarde des données utilisateur

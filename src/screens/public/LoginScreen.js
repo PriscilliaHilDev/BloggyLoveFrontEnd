@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { loginUser } from '../../services/authService'; // Importer la fonction loginUser
-
+import { AuthContext } from '../../context/AuthContext'; // Importer le contexte AuthContext
+import { loginUser} from '../../services/authService';
 const LoginScreen = ({ navigation }) => {
+  const { login } = useContext(AuthContext); // Utiliser login du AuthContext
+
   // Validation de formulaire avec Yup
   const validationSchema = Yup.object().shape({
     email: Yup.string().email('Email invalide').required('Email est requis'),
@@ -13,19 +15,17 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async (values, resetForm) => {
     try {
+      // Appeler le service pour effectuer la connexion (remplacer par votre logique de connexion)
       const result = await loginUser(values);
-  
+
       if (result.success) {
         // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
-  
-        // Navigation vers la page d'accueil ou la page souhaitée
-        setTimeout(() => {
-          navigation.navigate('Home');
-        }, 500);
-        
-        // Affichage de l'alerte de succès
+        // Navigation vers la page d'accueil ou la page souhaitée après la connexion
         Alert.alert('Connexion réussie', 'Vous êtes connecté !');
+         // Appeler la fonction de login du contexte AuthContext
+         login();
+        navigation.navigate('Home'); // Exemple de navigation
       } else {
         Alert.alert('Erreur', result.message);
       }
@@ -33,7 +33,6 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
     }
   };
-  
 
   return (
     <KeyboardAvoidingView
@@ -42,7 +41,7 @@ const LoginScreen = ({ navigation }) => {
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Connexion</Text>
-  
+
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={validationSchema}
@@ -63,7 +62,7 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
-  
+
               <View style={styles.inputContainer}>
                 <TextInput
                   style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
@@ -75,19 +74,19 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
-  
+
               <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                 <Text style={styles.linkForgotPassword}>Mot de passe oublié ?</Text>
               </TouchableOpacity>
-  
+
               <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
                 <Text style={styles.submitButtonText}>Se connecter</Text>
               </TouchableOpacity>
-  
+
             </>
           )}
         </Formik>
-  
+
         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
           <Text style={styles.linkText}>Vous n'avez pas encore de compte ?</Text>
           <Text style={styles.linkText}> Inscrivez-vous</Text>
@@ -95,7 +94,6 @@ const LoginScreen = ({ navigation }) => {
       </View>
     </KeyboardAvoidingView>
   );
-  
 };
 
 const styles = StyleSheet.create({

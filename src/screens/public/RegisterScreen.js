@@ -12,6 +12,8 @@ import {
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../../services/authService';
+import { Icon } from 'react-native-elements';
+
 
 const RegisterScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -82,6 +84,7 @@ const RegisterScreen = ({ navigation }) => {
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Inscription</Text>
+        <Icon name="home" type="font-awesome" />
 
         <Formik
           initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
@@ -141,7 +144,7 @@ const RegisterScreen = ({ navigation }) => {
                 />
               
                  {/* Affichage des critères sous forme de badges */}
-                 {!isPasswordValid && (
+                 {!isPasswordValid  && values.password.length > 0 && (
                 <View style={styles.passwordCriteriaContainer}>
                   <View style={[styles.badge, passwordCriteria.minLength ? styles.validBadge : styles.invalidBadge]}>
                     <Text style={styles.badgeText}>6+ caractères</Text>

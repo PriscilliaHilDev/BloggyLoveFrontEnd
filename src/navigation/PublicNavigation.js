@@ -4,7 +4,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import HomeScreen from '../screens/public/HomeScreen'
 import LoginScreen from '../screens/public/LoginScreen'
 import RegisterScreen from '../screens/public/RegisterScreen'
-import WelcomeScreen from '../screens/private/WelcomScreen'
 import ForgotPasswordScreen from '../screens/public/ForgetPasswordScreen';
 import ResetPasswordScreen from '../screens/public/ResetPasswordScreen';
 
@@ -34,7 +33,6 @@ const PublicNavigation = () => {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
 
       </Stack.Navigator>
     </NavigationContainer>
