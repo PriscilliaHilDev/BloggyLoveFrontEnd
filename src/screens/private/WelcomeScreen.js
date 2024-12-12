@@ -9,7 +9,6 @@ import { AuthContext } from '../../context/AuthContext';
 const WelcomeScreen = () => {
 
   const { logout } = useContext(AuthContext); // Utilisation de la méthode logout depuis AuthContext
-  const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState(null);
 
 
@@ -17,7 +16,6 @@ const WelcomeScreen = () => {
     const getUser = async () => {
       const userData = await getUserData();
       if (userData) {
-        setUserId(userData.user.id)
         setUserName(userData.user.name)
       }
     };
@@ -25,16 +23,12 @@ const WelcomeScreen = () => {
   }, []);
 
   const handleLogout = async () => {
-    if (!userId) {
-      Alert.alert('Erreur', 'Aucun utilisateur connecté.');
-      return;
-    }
-
     try {
-      const result = await logoutUser(userId);  // Passer l'userId lors de la déconnexion
+      const result = await logoutUser();  // Appeler directement logoutUser sans avoir besoin de userId
       if (result.success) {
-        Alert.alert('Déconnexion réussie', 'Vous avez été déconnecté avec succès.');
-        logout();
+        Alert.alert('Déconnexion réussie', result.message);
+        // Rediriger vers la page home de l'application
+        logout()
       } else {
         Alert.alert('Erreur', result.message);
       }

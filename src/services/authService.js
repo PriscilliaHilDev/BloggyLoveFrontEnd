@@ -1,5 +1,5 @@
 import { authorize } from 'react-native-app-auth';
-import { saveUserData, clearUserData } from '../utils/userStorage';
+import { saveUserData, clearUserData, getUserData } from '../utils/userStorage';
 import api from '../secureApiRequest';
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement pour l'OAuth Google
 
@@ -14,8 +14,17 @@ const config = {
 };
 
 // Fonction pour gérer la déconnexion et supprimer les données utilisateur
-export const logoutUser = async (userId) => {
+export const logoutUser = async () => {
   try {
+    // Récupérer les données utilisateur directement dans la fonction
+    const userData = await getUserData();
+
+    if (!userData || !userData.user || !userData.user.id) {
+      return { success: false, message: 'Aucun utilisateur connecté.' }; // Vérification si l'utilisateur est connecté
+    }
+
+    const userId = userData.user.id;
+
     // Appel de l'API de déconnexion du back-end
     const response = await api.post('/logout', { userId });
 

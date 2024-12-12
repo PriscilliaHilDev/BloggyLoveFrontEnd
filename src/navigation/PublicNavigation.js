@@ -6,18 +6,11 @@ import LoginScreen from '../screens/public/LoginScreen'
 import RegisterScreen from '../screens/public/RegisterScreen'
 import ForgotPasswordScreen from '../screens/public/ForgetPasswordScreen';
 import ResetPasswordScreen from '../screens/public/ResetPasswordScreen';
+import { linking } from '../utils/linking'; 
 
 
 const Stack = createStackNavigator();
 
-const linking = {
-  prefixes: ['mychat://', 'http://192.168.1.20', 'https://192.168.1.20'],
-  config: {
-    screens: {
-      ResetPassword: 'reset-password/:token', // Capturer le token de l'URL
-    },
-  },
-};
 
 const PublicNavigation = () => {
   return (

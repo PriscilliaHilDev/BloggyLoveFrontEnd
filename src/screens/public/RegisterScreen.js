@@ -62,11 +62,12 @@ const RegisterScreen = ({ navigation }) => {
       const result = await registerUser({ name, email, password });
 
       if (result.success) {
+        // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
-        setTimeout(() => {
-          navigation.navigate('Login');
-        }, 500);
-        Alert.alert('Enregistrement réussit', 'Compte créé !');
+        // Navigation vers la page d'accueil ou la page souhaitée après la connexion
+        Alert.alert('Enregistrement réussie', 'Vous êtes connecté !');
+         // Appeler la fonction de login du contexte AuthContext
+         login();
       } else {
         Alert.alert('Erreur', result.message);
       }
