@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext} from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,14 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../../services/authService';
 import { Icon } from 'react-native-elements';
-
+import { AuthContext } from '../../context/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
+
+  const { login } = useContext(AuthContext); 
+
   const [isLoading, setIsLoading] = useState(false);
+
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
     hasLowercase: false,
@@ -49,7 +53,6 @@ const RegisterScreen = ({ navigation }) => {
       hasNumber: /[0-9]/.test(password),
       hasSpecialChar: /[@$!%*?&]/.test(password),
     };
-
     setPasswordCriteria(criteria);
     setIsPasswordValid(Object.values(criteria).every((value) => value === true));
   };

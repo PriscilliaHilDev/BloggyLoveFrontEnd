@@ -4,7 +4,11 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { AuthContext } from '../../context/AuthContext'; // Importer le contexte AuthContext
 import { loginUser} from '../../services/authService';
+
+
+
 const LoginScreen = ({ navigation }) => {
+  
   const { login } = useContext(AuthContext); // Utiliser login du AuthContext
 
   // Validation de formulaire avec Yup

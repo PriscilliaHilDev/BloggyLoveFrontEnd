@@ -1,18 +1,22 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import { View, Text, StyleSheet, ImageBackground, Dimensions, Alert } from 'react-native';
 import Button from '../../components/Button';
 import { googleLogin } from '../../services/authService'; // Importer la fonction googleLogin
-import { API_BASE_URL } from '@env';
+import { AuthContext } from '../../context/AuthContext';
+
+
 
 const { height, width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
+
+  const { login } = useContext(AuthContext); // Utilisation de la méthode logout depuis AuthContext
+
   // Fonction pour gérer la connexion Google
   const handleGoogleLogin = async () => {
     const result = await googleLogin();
     if (result.success) {
-      Alert.alert('Connexion réussie', `Bienvenue !`);
-      // navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      login()
     } else if (!result.silent) {
       // Affiche l'erreur uniquement si ce n'est pas une annulation silencieuse
       Alert.alert('Erreur', result.message);

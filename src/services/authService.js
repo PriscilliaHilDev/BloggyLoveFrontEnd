@@ -13,6 +13,8 @@ const config = {
   usePKCE: true, // Utilisation de PKCE pour renforcer la sécurité lors de l'authentification
 };
 
+
+
 // Fonction pour gérer la déconnexion et supprimer les données utilisateur
 export const logoutUser = async () => {
   try {
@@ -32,7 +34,6 @@ export const logoutUser = async () => {
     if (response.status === 200) {
       // Effacer les données utilisateur localement
       await clearUserData();
-
       return { success: true, message: 'Vous êtes déconnecté !' }; // Réponse de succès
     } else {
       return { success: false, message: response.data.message || 'Erreur lors de la déconnexion.' };
@@ -73,7 +74,6 @@ export const googleLogin = async () => {
       // Sauvegarder les données utilisateur de manière sécurisée
       await saveUserData(user, 'google', newAccessToken, refreshToken);
 
-      console.log('Connexion réussie via Google');
       return { success: true, message: 'Vous êtes connecté !' }; // Retourner une réponse indiquant une connexion réussie
     } else {
       // Si la réponse est incorrecte
@@ -136,7 +136,6 @@ export const registerUser = async (userData) => {
       // Sauvegarder les données utilisateur
       await saveUserData(user, 'form', accessToken, refreshToken);
 
-      console.log('Utilisateur enregistré avec succès');
       return { success: true, data: response.data }; // Retourner les données d'inscription
     } else {
       console.error('Statut HTTP inattendu:', response.status);
