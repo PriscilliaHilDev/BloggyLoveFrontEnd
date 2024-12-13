@@ -1,6 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { logoutUser } from '../../services/authService';
 import { getUserData } from '../../utils/userStorage';
 import { AuthContext } from '../../context/AuthContext';

@@ -1,102 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Linking } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
-import { resetPassword } from '../../services/authService';
+import { resetPassword, logoutUser } from '../../services/authService';
 import { AuthContext } from '../../context/AuthContext';
-import { logoutUser } from '../../services/authService';
+import { showAlert } from '../../utils';  // Importation de showAlert
 
 const ResetPasswordScreen = () => {
-  const route = useRoute(); // Accéder aux paramètres de la route
-  const navigation = useNavigation(); // Récupérer l'instance de navigation pour rediriger l'utilisateur
-  const { isAuthenticated } = React.useContext(AuthContext);  // Utilisation du contexte d'authentification pour vérifier si l'utilisateur est connecté
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { logout, isAuthenticated } = useContext(AuthContext);
 
-  const [token, setToken] = useState(route.params?.token); // Récupérer le token passé par les paramètres de la route
-  const [loading, setLoading] = useState(false); // Indicateur de chargement pour la réinitialisation du mot de passe
-  const [isTokenProcessed, setIsTokenProcessed] = useState(false); // Indicateur pour vérifier si le token a déjà été traité
-
-  // Fonction de déconnexion de l'utilisateur
-  const handleLogout = async () => {
-    try {
-      const result = await logoutUser();  // Appeler directement logoutUser sans avoir besoin de userId
-      if (result.success) {
-        Alert.alert('Déconnexion réussie', result.message);
-        // Rediriger vers la page d'accueil de l'application après déconnexion
-        logout();
-      } else {
-        Alert.alert('Erreur', result.message);
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
-    }
-  };
+  const [token, setToken] = useState(route.params?.token || null);
+  const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isTokenProcessed, setIsTokenProcessed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Nouvelle variable pour la déconnexion
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    minLength: false,
+    hasLowercase: false,
+    hasUppercase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+  });
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
 
   useEffect(() => {
-    const handleUrl = (event) => {
-      if (isTokenProcessed) return; // Empêcher le traitement plusieurs fois du même token
+    const handleUrl = async (event) => {
+      setIsProcessing(true);
+      if (isTokenProcessed) return;
+
       const urlParts = event.url.split('/reset-password/');
       if (urlParts.length > 1) {
         const tokenFromUrl = urlParts[1];
         if (tokenFromUrl && tokenFromUrl.trim() !== '') {
-          setToken(tokenFromUrl); // Mettre à jour le token
-          setIsTokenProcessed(true); // Marquer le token comme traité
-  
-          // Si l'utilisateur est authentifié, le déconnecter
-          if (isAuthenticated) {
-            handleLogout(); // Déconnecter l'utilisateur avant de traiter le lien
-          }
+          setToken(tokenFromUrl);
+          setIsTokenProcessed(true);
         } else {
-          Alert.alert('Erreur', 'Le token de réinitialisation est vide ou invalide.');
+          showAlert('Erreur', 'Le token de réinitialisation est vide ou invalide.');
         }
       } else {
-        Alert.alert('Erreur', 'Le format de l\'URL est incorrect.');
+        showAlert('Erreur', 'Le format de l\'URL est incorrect.');
       }
+      setIsProcessing(false);
     };
-  
-    // Ajouter un écouteur pour les liens URL
-    const subscription = Linking.addListener('url', handleUrl);
-    // Vérifier si l'application a été ouverte via un lien
-    Linking.getInitialURL().then((url) => {
-      if (url) handleUrl({ url }); // Gérer le lien initial
-    });
-  
-    return () => {
-      subscription.remove(); // Nettoyer l'abonnement quand le composant est démonté
-    };
-  }, [isTokenProcessed, isAuthenticated]);
 
-  // Validation du formulaire avec Yup
+    const subscription = Linking.addListener('url', handleUrl);
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+      else setIsProcessing(false);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isTokenProcessed]);
+
   const validationSchema = Yup.object().shape({
     password: Yup.string()
       .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
-      .required('Mot de passe requis'),
+      .required('Mot de passe requis')
+      .matches(/[a-z]/, 'Le mot de passe doit contenir au moins une lettre minuscule')
+      .matches(/[A-Z]/, 'Le mot de passe doit contenir au moins une lettre majuscule')
+      .matches(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+      .matches(/[@$!%*?&]/, 'Le mot de passe doit contenir au moins un caractère spécial'),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
       .required('Confirmation du mot de passe requise'),
   });
 
-  // Fonction pour réinitialiser le mot de passe
+  const handlePasswordChange = (password) => {
+    const criteria = {
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[@$!%*?&]/.test(password),
+    };
+    setPasswordCriteria(criteria);
+    setIsPasswordValid(Object.values(criteria).every((value) => value === true));
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true); // Afficher un message de déconnexion immédiatement
+  
+      const result = await logoutUser();  // Effectuer la déconnexion
+      if (result.success) {
+        logout();  // Met à jour l'état de l'utilisateur dans le contexte
+        showAlert(
+          'Nouveau mot de passe crée avec succes',
+          'Vous avez été déconnecté. Vous devrez vous reconnecter avec vos nouveaux identifiants.',
+          () => navigation.navigate('Login')  // Navigation vers l'écran de connexion
+        );
+      } else {
+        showAlert('Erreur', result.message);
+      }
+      setIsLoggingOut(false);  // Terminer l'état de déconnexion
+    } catch (error) {
+      showAlert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
+      setIsLoggingOut(false);  // Gérer l'état de déconnexion en cas d'erreur
+    }
+  };
+
   const handleResetPassword = async (values) => {
     if (!token) {
-      Alert.alert('Erreur', 'Le token de réinitialisation est manquant.');
+      showAlert('Erreur', 'Le token de réinitialisation est manquant.');
       return;
     }
   
-    setLoading(true); // Afficher un indicateur de chargement
+    setLoading(true);
     try {
-      const result = await resetPassword(token, values.password); // Appeler le service de réinitialisation avec le token et le nouveau mot de passe
+      const result = await resetPassword(token, values.password);
       if (result.success) {
-        Alert.alert('Succès', 'Votre mot de passe a été réinitialisé avec succès.', [
-          { text: 'OK', onPress: () => navigation.navigate('Login') }, // Naviguer vers la page de connexion après succès
-        ]);
+        showAlert(
+          'Réinitialisation réussie',
+          'Votre mot de passe a été réinitialisé avec succès.',
+          () => {
+            if (isAuthenticated) {
+              handleLogout();
+            } else {
+              navigation.navigate('Login');
+            }
+          }
+        );
       } else {
-        Alert.alert('Erreur', result.message); // Afficher le message d'erreur si la réinitialisation échoue
+        showAlert('Erreur', 'Le token de réinitialisation est vide ou invalide.', () => {
+          navigation.goBack();  // Naviguer en arrière après l'alerte
+        });
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue. Veuillez réessayer.'); // Gestion des erreurs
+      showAlert('Erreur', 'Une erreur est survenue lors de la réinitialisation du mot de passe. Veuillez réessayer.');
     } finally {
-      setLoading(false); // Cacher l'indicateur de chargement
+      setLoading(false);
     }
   };
 
@@ -115,11 +152,36 @@ const ResetPasswordScreen = () => {
               style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
               placeholder="Nouveau mot de passe"
               secureTextEntry
-              onChangeText={handleChange('password')}
+              onChangeText={(text) => {
+                handleChange('password')(text);
+                handlePasswordChange(text);
+              }}
               onBlur={handleBlur('password')}
               value={values.password}
             />
-            {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+            {touched.password && errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
+
+            {!isPasswordValid && values.password.length > 0 && (
+              <View style={styles.passwordCriteriaContainer}>
+                <View style={[styles.badge, passwordCriteria.minLength ? styles.validBadge : styles.invalidBadge]}>
+                  <Text style={styles.badgeText}>8+ caractères</Text>
+                </View>
+                <View style={[styles.badge, passwordCriteria.hasLowercase ? styles.validBadge : styles.invalidBadge]}>
+                  <Text style={styles.badgeText}>Minuscule</Text>
+                </View>
+                <View style={[styles.badge, passwordCriteria.hasUppercase ? styles.validBadge : styles.invalidBadge]}>
+                  <Text style={styles.badgeText}>Majuscule</Text>
+                </View>
+                <View style={[styles.badge, passwordCriteria.hasNumber ? styles.validBadge : styles.invalidBadge]}>
+                  <Text style={styles.badgeText}>Chiffre</Text>
+                </View>
+                <View style={[styles.badge, passwordCriteria.hasSpecialChar ? styles.validBadge : styles.invalidBadge]}>
+                  <Text style={styles.badgeText}>Spécial</Text>
+                </View>
+              </View>
+            )}
 
             <TextInput
               style={[styles.input, touched.confirmPassword && errors.confirmPassword ? styles.inputError : null]}
@@ -129,21 +191,29 @@ const ResetPasswordScreen = () => {
               onBlur={handleBlur('confirmPassword')}
               value={values.confirmPassword}
             />
-            {touched.confirmPassword && errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+            {touched.confirmPassword && errors.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
 
-            <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
-              <Text style={styles.buttonText}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                (loading || !isPasswordValid) ? styles.buttonDisabled : null,
+              ]}
+              onPress={handleSubmit}
+              disabled={loading || !isPasswordValid}
+            >
+              <Text style={[styles.buttonText, (loading || !isPasswordValid) ? styles.buttonTextDisabled : null]}>
                 {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
               </Text>
             </TouchableOpacity>
           </>
         )}
       </Formik>
+
     </View>
   );
 };
-
-// Styles pour la page
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -183,6 +253,33 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  passwordCriteriaContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  badge: {
+    margin: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  validBadge: {
+    backgroundColor: 'green',
+  },
+  invalidBadge: {
+    backgroundColor: 'red',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#cccccc',  // Couleur de fond du bouton désactivé
+  },
+  buttonTextDisabled: {
+    color: '#666666',  // Couleur du texte pour le bouton désactivé
   },
 });
 

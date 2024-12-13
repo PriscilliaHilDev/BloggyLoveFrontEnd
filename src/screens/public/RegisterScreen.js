@@ -67,6 +67,7 @@ const RegisterScreen = ({ navigation }) => {
       if (result.success) {
         // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
+        login();
        
       } else {
         Alert.alert('Erreur', result.message);

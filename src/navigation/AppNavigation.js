@@ -13,35 +13,41 @@ import { linking } from '../utils/linking';
 const Stack = createStackNavigator();
 
 const AppNavigation = () => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, isLoading } = useContext(AuthContext);
+
+  console.log('isAuthenticated dans AppNavigation :', isAuthenticated);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Chargement...</Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer linking={linking}>
       <Stack.Navigator
-        initialRouteName={isAuthenticated ? "Welcome" : "Home"}
-        screenOptions={{
-          headerShown: false,
-        }}
+        initialRouteName={isAuthenticated ? 'Welcome' : 'Login'}
+        screenOptions={{ headerShown: false }}
       >
         {isAuthenticated ? (
-          // Écrans privés
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} /> 
           </>
         ) : (
-          // Écrans publics
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         )}
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
 
 export default AppNavigation;

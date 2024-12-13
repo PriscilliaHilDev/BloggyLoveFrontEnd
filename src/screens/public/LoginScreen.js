@@ -8,7 +8,7 @@ import { loginUser} from '../../services/authService';
 
 
 const LoginScreen = ({ navigation }) => {
-  
+
   const { login } = useContext(AuthContext); // Utiliser login du AuthContext
 
   // Validation de formulaire avec Yup
@@ -25,7 +25,7 @@ const LoginScreen = ({ navigation }) => {
       if (result.success) {
         // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
-
+        login();
       } else {
         Alert.alert('Erreur', result.message);
       }
