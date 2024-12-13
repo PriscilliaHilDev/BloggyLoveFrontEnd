@@ -1,4 +1,4 @@
-import React, { useState, useContext} from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,18 @@ import { Icon } from 'react-native-elements';
 import { AuthContext } from '../../context/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
-
-  const { login } = useContext(AuthContext); 
-
+  const { login } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
 
+
+  // Variables pour la visibilité des mots de passe
+  const [passwordVisibility, setPasswordVisibility] = useState(false);
+  const [confirmPasswordVisibility, setConfirmPasswordVisibility] = useState(false);
+
+  const passwordVisibilityIcon = passwordVisibility ? '👁️' : '🙈';
+  const confirmPasswordVisibilityIcon = confirmPasswordVisibility ? '👁️' : '🙈';
+
+  // Variables pour valider le mot de passe
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
     hasLowercase: false,
@@ -65,10 +72,8 @@ const RegisterScreen = ({ navigation }) => {
       const result = await registerUser({ name, email, password });
 
       if (result.success) {
-        // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
         login();
-       
       } else {
         Alert.alert('Erreur', result.message);
       }
@@ -77,6 +82,15 @@ const RegisterScreen = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fonction pour basculer la visibilité des mots de passe
+  const togglePasswordVisibility = () => {
+    setPasswordVisibility(!passwordVisibility);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setConfirmPasswordVisibility(!confirmPasswordVisibility);
   };
 
   return (
@@ -128,72 +142,68 @@ const RegisterScreen = ({ navigation }) => {
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[
-                    styles.input,
-                    touched.password && errors.password ? styles.inputError : null,
-                    values.password && !errors.password && isPasswordValid
-                      ? styles.inputValid
-                      : null,
-                  ]}
+                  style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
                   placeholder="Mot de passe"
-                  secureTextEntry
+                  secureTextEntry={!passwordVisibility}
                   onChangeText={(text) => {
                     handleChange('password')(text);
-                    handlePasswordChange(text);
+                    handlePasswordChange(text); // Validation mot de passe
                   }}
                   onBlur={handleBlur('password')}
                   value={values.password}
                 />
-              
-                 {/* Affichage des critères sous forme de badges */}
-                 {!isPasswordValid  && values.password.length > 0 && (
+                <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+                  <Text>{passwordVisibilityIcon}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Affichage des critères sous forme de badges */}
+              {!isPasswordValid && values.password.length > 0 && (
                 <View style={styles.passwordCriteriaContainer}>
-                  <View style={[styles.badge, passwordCriteria.minLength ? styles.validBadge : styles.invalidBadge]}>
+                  <View
+                    style={[styles.badge, passwordCriteria.minLength ? styles.validBadge : styles.invalidBadge]}
+                  >
                     <Text style={styles.badgeText}>6+ caractères</Text>
                   </View>
-                  <View style={[styles.badge, passwordCriteria.hasLowercase ? styles.validBadge : styles.invalidBadge]}>
+                  <View
+                    style={[styles.badge, passwordCriteria.hasLowercase ? styles.validBadge : styles.invalidBadge]}
+                  >
                     <Text style={styles.badgeText}>Minuscule</Text>
                   </View>
-                  <View style={[styles.badge, passwordCriteria.hasUppercase ? styles.validBadge : styles.invalidBadge]}>
+                  <View
+                    style={[styles.badge, passwordCriteria.hasUppercase ? styles.validBadge : styles.invalidBadge]}
+                  >
                     <Text style={styles.badgeText}>Majuscule</Text>
                   </View>
-                  <View style={[styles.badge, passwordCriteria.hasNumber ? styles.validBadge : styles.invalidBadge]}>
+                  <View
+                    style={[styles.badge, passwordCriteria.hasNumber ? styles.validBadge : styles.invalidBadge]}
+                  >
                     <Text style={styles.badgeText}>Chiffre</Text>
                   </View>
-                  <View style={[styles.badge, passwordCriteria.hasSpecialChar ? styles.validBadge : styles.invalidBadge]}>
+                  <View
+                    style={[styles.badge, passwordCriteria.hasSpecialChar ? styles.validBadge : styles.invalidBadge]}
+                  >
                     <Text style={styles.badgeText}>Spécial</Text>
                   </View>
                 </View>
               )}
-              </View>
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[
-                    styles.input,
-                    touched.confirmPassword && errors.confirmPassword ? styles.inputError : null,
-                    values.confirmPassword && !errors.confirmPassword
-                      ? styles.inputValid
-                      : null,
-                  ]}
+                  style={[styles.input, touched.confirmPassword && errors.confirmPassword ? styles.inputError : null]}
                   placeholder="Confirmer le mot de passe"
-                  secureTextEntry
+                  secureTextEntry={!confirmPasswordVisibility}
                   onChangeText={handleChange('confirmPassword')}
                   onBlur={handleBlur('confirmPassword')}
                   value={values.confirmPassword}
                 />
-                {touched.confirmPassword && errors.confirmPassword && (
-                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-                )}
+                <TouchableOpacity onPress={toggleConfirmPasswordVisibility} style={styles.eyeIcon}>
+                  <Text>{confirmPasswordVisibilityIcon}</Text>
+                </TouchableOpacity>
+                {touched.confirmPassword && errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
               </View>
 
-            
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmit}
-                disabled={isLoading || !isPasswordValid}
-              >
+              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
                 {isLoading ? (
                   <Text style={styles.submitButtonText}>Chargement...</Text>
                 ) : (
@@ -274,7 +284,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // justifyContent: 'center',
   },
   badge: {
     margin: 3,
@@ -291,6 +300,11 @@ const styles = StyleSheet.create({
   badgeText: {
     color: 'white',
     fontSize: 10,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 10,
+    top: 15,
   },
 });
 

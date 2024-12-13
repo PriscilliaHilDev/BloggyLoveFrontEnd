@@ -1,15 +1,14 @@
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { AuthContext } from '../../context/AuthContext'; // Importer le contexte AuthContext
-import { loginUser} from '../../services/authService';
-
-
+import { loginUser } from '../../services/authService';
 
 const LoginScreen = ({ navigation }) => {
-
   const { login } = useContext(AuthContext); // Utiliser login du AuthContext
+  const [secureText, setSecureText] = useState(true); // État pour contrôler la visibilité du mot de passe
+  const passwordVisibilityIcon = !secureText ? '👁️' : '🙈';
 
   // Validation de formulaire avec Yup
   const validationSchema = Yup.object().shape({
@@ -32,6 +31,11 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
     }
+  };
+
+  // Fonction pour basculer l'état du mot de passe (afficher/masquer)
+  const toggleSecureTextEntry = () => {
+    setSecureText(!secureText);
   };
 
   return (
@@ -67,12 +71,15 @@ const LoginScreen = ({ navigation }) => {
                 <TextInput
                   style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
                   placeholder="Mot de passe"
-                  secureTextEntry
+                  secureTextEntry={secureText}  // Masquer ou afficher le mot de passe
                   onChangeText={handleChange('password')}
                   onBlur={handleBlur('password')}
                   value={values.password}
                 />
                 {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.eyeIcon}>
+                  <Text>{passwordVisibilityIcon}</Text> {/* Affiche une icône pour basculer l'affichage du mot de passe */}
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
@@ -82,7 +89,6 @@ const LoginScreen = ({ navigation }) => {
               <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
                 <Text style={styles.submitButtonText}>Se connecter</Text>
               </TouchableOpacity>
-
             </>
           )}
         </Formik>
@@ -116,6 +122,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 15,
     marginHorizontal: 15,
+    position: 'relative',  // Nécessaire pour positionner l'icône de l'œil
   },
   input: {
     height: 50,
@@ -151,13 +158,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
   },
-  linkForgotPassword:{
+  linkForgotPassword: {
     color: '#007BFF',
     fontSize: 14,
-    padding:10,
+    padding: 10,
     textAlign: 'right', // Aligner le texte à droite
     width: '100%', // Nécessaire pour que l'alignement fonctionne correctement
-  }
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 10,
+    top: 12,  // Positionne l'icône à droite du champ de saisie
+  },
 });
 
 export default LoginScreen;
