@@ -26,9 +26,7 @@ const WelcomeScreen = () => {
     try {
       const result = await logoutUser();  // Appeler directement logoutUser sans avoir besoin de userId
       if (result.success) {
-        Alert.alert('Déconnexion réussie', result.message);
-        // Rediriger vers la page home de l'application
-        logout()
+        logout();
       } else {
         Alert.alert('Erreur', result.message);
       }

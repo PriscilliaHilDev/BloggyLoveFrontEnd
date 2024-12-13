@@ -25,11 +25,6 @@ const LoginScreen = ({ navigation }) => {
       if (result.success) {
         // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
-        
-        // Navigation vers la page d'accueil ou la page souhaitée après la connexion
-        // Alert.alert('Connexion réussie', 'Vous êtes connecté !');
-         // Appeler la fonction de login du contexte AuthContext
-         login();
 
       } else {
         Alert.alert('Erreur', result.message);

@@ -4,6 +4,7 @@ import api from '../secureApiRequest';
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement pour l'OAuth Google
 
 
+
 // Configuration OAuth Google avec les paramètres provenant des variables d'environnement
 const config = {
   issuer: "https://accounts.google.com",
@@ -135,7 +136,6 @@ export const registerUser = async (userData) => {
 
       // Sauvegarder les données utilisateur
       await saveUserData(user, 'form', accessToken, refreshToken);
-
       return { success: true, data: response.data }; // Retourner les données d'inscription
     } else {
       console.error('Statut HTTP inattendu:', response.status);
