@@ -11,8 +11,6 @@ const HomeScreen = ({ navigation }) => {
   const handleGoogleLogin = async () => {
     const result = await googleLogin();
     if (result.success) {
-      Alert.alert('Connexion réussie', `Bienvenue !`);
-      // navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } else if (!result.silent) {
       // Affiche l'erreur uniquement si ce n'est pas une annulation silencieuse
       Alert.alert('Erreur', result.message);

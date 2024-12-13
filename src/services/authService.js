@@ -2,7 +2,10 @@ import { authorize } from 'react-native-app-auth';
 import { saveUserData, clearUserData, getUserData } from '../utils/userStorage';
 import api from '../secureApiRequest';
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from '@env'; // Importer les variables d'environnement pour l'OAuth Google
+import { AuthContext } from '../context/AuthContext';
 
+
+const { logout, login } = useContext(AuthContext);
 
 // Configuration OAuth Google avec les paramètres provenant des variables d'environnement
 const config = {
@@ -12,6 +15,8 @@ const config = {
   scopes: ['openid', 'profile', 'email'], // Définir les autorisations requises pour l'authentification
   usePKCE: true, // Utilisation de PKCE pour renforcer la sécurité lors de l'authentification
 };
+
+
 
 // Fonction pour gérer la déconnexion et supprimer les données utilisateur
 export const logoutUser = async () => {
@@ -32,7 +37,7 @@ export const logoutUser = async () => {
     if (response.status === 200) {
       // Effacer les données utilisateur localement
       await clearUserData();
-
+      logout(); // Appel de logout pour mettre à jour le contexte
       return { success: true, message: 'Vous êtes déconnecté !' }; // Réponse de succès
     } else {
       return { success: false, message: response.data.message || 'Erreur lors de la déconnexion.' };
@@ -73,7 +78,8 @@ export const googleLogin = async () => {
       // Sauvegarder les données utilisateur de manière sécurisée
       await saveUserData(user, 'google', newAccessToken, refreshToken);
 
-      console.log('Connexion réussie via Google');
+      login(); // Appel de logout pour mettre à jour le contexte
+
       return { success: true, message: 'Vous êtes connecté !' }; // Retourner une réponse indiquant une connexion réussie
     } else {
       // Si la réponse est incorrecte
@@ -106,6 +112,8 @@ export const loginUser = async (credentials) => {
 
       // Sauvegarde des données utilisateur
       await saveUserData(user, 'form', accessToken, refreshToken);
+      login(); // Appel de logout pour mettre à jour le contexte
+
 
       console.log('Utilisateur connecté avec succès');
       return { success: true, data: response.data }; // Retourner les données de l'utilisateur
@@ -135,8 +143,7 @@ export const registerUser = async (userData) => {
 
       // Sauvegarder les données utilisateur
       await saveUserData(user, 'form', accessToken, refreshToken);
-
-      console.log('Utilisateur enregistré avec succès');
+      login(); // Appel de logout pour mettre à jour le contexte
       return { success: true, data: response.data }; // Retourner les données d'inscription
     } else {
       console.error('Statut HTTP inattendu:', response.status);

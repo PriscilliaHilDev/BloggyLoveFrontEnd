@@ -4,7 +4,7 @@ import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import AppNavigation from './src/navigation/AppNavigation';
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = React.useContext(AuthContext);
+  const { isLoading } = React.useContext(AuthContext);
 
   if (isLoading) {
     return (
