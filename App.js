@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { AuthProvider, AuthContext } from './src/context/AuthContext';  // Import du contexte
-import PublicNavigation from './src/navigation/PublicNavigation';
-import PrivateNavigation from './src/navigation/PrivateNavigation';
+import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import AppNavigation from './src/navigation/AppNavigation';
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = React.useContext(AuthContext);  // Utilisation du contexte
+  const { isAuthenticated, isLoading } = React.useContext(AuthContext);
 
   if (isLoading) {
     return (
@@ -15,11 +14,7 @@ function AppContent() {
     );
   }
 
-  return (
-    <View style={{ flex: 1 }}>
-      {isAuthenticated ? <PrivateNavigation /> : <PublicNavigation />}
-    </View>
-  );
+  return <AppNavigation />;
 }
 
 export default function App() {

@@ -23,7 +23,7 @@ const LoginScreen = ({ navigation }) => {
         resetForm();
         
         // Navigation vers la page d'accueil ou la page souhaitée après la connexion
-        Alert.alert('Connexion réussie', 'Vous êtes connecté !');
+        // Alert.alert('Connexion réussie', 'Vous êtes connecté !');
          // Appeler la fonction de login du contexte AuthContext
          login();
 
